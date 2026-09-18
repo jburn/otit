@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Object Traversal & Inspection Toolkit"
 readme = "README.md"
 requires-python = ">=3.10"
-license = "GPLv3.0"
+license = "GPL-3.0-or-later"
 authors = [
     { name = "jburn" }
 ]
