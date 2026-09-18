@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import pytest
 
 import otit
 
@@ -85,3 +86,12 @@ def test_find_container_values() -> None:
     assert result == [
         (("user",), {"name": "Matti"}),
     ]
+
+def test_find_does_not_hide_predicate_exceptions() -> None:
+    obj = {"value": 42}
+
+    def predicate(value: object) -> bool:
+        raise RuntimeError("predicate failed")
+
+    with pytest.raises(RuntimeError, match="predicate failed"):
+        list(otit.find(obj, predicate))

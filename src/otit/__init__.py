@@ -9,10 +9,10 @@ __all__ = [
     "OtitError",
     "PathNotFound",
     "InvalidPath",
+    "delete",
+    "find",
     "get",
     "has",
     "set",
-    "delete",
     "walk",
-    "find"
 ]
