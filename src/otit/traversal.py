@@ -239,3 +239,21 @@ def find(
     for path, value in walk(obj):
         if predicate(value):
             yield path, value
+
+def paths(
+    obj: Any
+) -> Iterator[tuple[PathSegment, ...]]:
+    """Yield the path of every reachable child.
+
+    Paths are returned as tuples of string and integer segments.
+    The root object itself is not included.
+
+    Args:
+        obj: Object to traverse.
+
+    Yields:
+        The path of each reachable child.
+    """
+    for path, _ in walk(obj):
+        yield path
+
