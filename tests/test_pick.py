@@ -205,3 +205,59 @@ def test_pick_multiple_sequence_items() -> None:
             {"name": "Liisa", "age": 25},
         ]
     }
+
+def test_pick_parent_subsumes_descendant() -> None:
+    obj = {
+        "user": {
+            "name": "Matti",
+            "age": 30,
+        }
+    }
+
+    assert otit.pick(
+        obj,
+        "user",
+        "user.name",
+    ) == {
+        "user": {
+            "name": "Matti",
+            "age": 30,
+        }
+    }
+
+
+def test_pick_parent_subsumes_descendant_regardless_of_order() -> None:
+    obj = {
+        "user": {
+            "name": "Matti",
+            "age": 30,
+        }
+    }
+
+    assert otit.pick(
+        obj,
+        "user.name",
+        "user",
+    ) == {
+        "user": {
+            "name": "Matti",
+            "age": 30,
+        }
+    }
+
+def test_pick_negative_sequence_index() -> None:
+    obj = {
+        "users": [
+            {"name": "Matti"},
+            {"name": "Liisa"},
+        ]
+    }
+
+    assert otit.pick(
+        obj,
+        "users.-1.name",
+    ) == {
+        "users": [
+            {"name": "Liisa"},
+        ]
+    }

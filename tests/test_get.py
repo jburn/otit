@@ -76,3 +76,13 @@ def test_get_does_not_hide_property_exceptions() -> None:
 
     with pytest.raises(RuntimeError, match="property failed"):
         otit.get(Broken(), "value")
+
+def test_get_rejects_boolean_sequence_index() -> None:
+    with pytest.raises(otit.PathNotFound):
+        otit.get(["a", "b"], (True,))
+
+def test_get_negative_sequence_index() -> None:
+    assert otit.get(
+        ["a", "b", "c"],
+        "-1",
+    ) == "c"
