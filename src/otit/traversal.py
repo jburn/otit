@@ -3,8 +3,16 @@ from typing import Any
 from collections.abc import Callable, Iterator
 
 from ._path import Path, PathSegment, parse_path
-from ._resolve import _ResolutionError, assign, iter_children, remove, resolve
 from .exceptions import InvalidPath, PathNotFound
+from ._resolve import (
+    _ResolutionError,
+    assign,
+    is_leaf,
+    iter_children,
+    remove,
+    resolve
+)
+
 
 _MISSING = object()
 
@@ -257,3 +265,20 @@ def paths(
     for path, _ in walk(obj):
         yield path
 
+def leaves(
+    obj: Any
+) -> Iterator[tuple[tuple[PathSegment, ...], Any]]:
+    """Yield every terminal value and its path.
+
+    A leaf is a value that OTIT does not treat as a traversable
+    container. Empty mappings and sequences are not considered leaves.
+
+    Args:
+        obj: Object to traverse.
+
+    Yields:
+        Pairs of `(path, value)` for each leaf value.
+    """
+    for path, value in walk(obj):
+        if is_leaf(value):
+            yield path, value

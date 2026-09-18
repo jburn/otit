@@ -117,6 +117,24 @@ def remove(obj: Any, segment: PathSegment) -> None:
 
     delattr(obj, segment)
 
+def is_leaf(obj: Any) -> bool:
+    """Return whether an Object is a terminal traversal value"""
+    if isinstance(obj, Mapping):
+        return False
+
+    if (
+        isinstance(obj, Sequence)
+        and not isinstance(obj, (str, bytes, bytearray))
+    ):
+        return False
+
+    try:
+        vars(obj)
+    except TypeError:
+        return True
+
+    return False
+
 def iter_children(
     obj: Any,
 ) -> Iterator[tuple[PathSegment, Any]]:
