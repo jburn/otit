@@ -4,7 +4,7 @@ from collections.abc import Callable, Iterator
 from typing import Any
 
 from ._path import Path, PathSegment, parse_path
-from ._resolve import _ResolutionError, assign, _is_leaf, iter_children, remove, resolve, resolved_segment
+from ._resolve import _ResolutionError, _SegmentKind, assign, _is_leaf, iter_children, remove, resolve, resolved_segment
 from .exceptions import InvalidPath, PathNotFound
 
 _MISSING = object()
@@ -49,11 +49,11 @@ def _resolve_parent(
 def _normalize_path(
     obj: Any,
     path: Path,
-) -> tuple[PathSegment, ...]:
-    """Return the canonical path produced by resolving a path."""
+) -> tuple[tuple[PathSegment, _SegmentKind], ...]:
+    """Return canonical path segments with their traversal kinds."""
     segments = parse_path(path)
     current = obj
-    normalized: list[PathSegment] = []
+    normalized: list[tuple[PathSegment, _SegmentKind]] = []
 
     for position, segment in enumerate(segments):
         try:
@@ -72,6 +72,48 @@ def _normalize_path(
         normalized.append(normalized_segment)
 
     return tuple(normalized)
+
+class _PickNode:
+    def __init__(self, kind: _SegmentKind | None = None) -> None:
+        self.kind = kind
+        self.children: dict[PathSegment, _PickNode] = {}
+        self.value: Any = _MISSING
+
+def _insert_picked(
+    root: _PickNode,
+    path: tuple[tuple[PathSegment, _SegmentKind], ...],
+    value: Any,
+) -> None:
+    current = root
+
+    for segment, kind in path:
+        child = current.children.get(segment)
+
+        if child is None:
+            child = _PickNode()
+            current.children[segment] = child
+
+        if current.kind is None:
+            current.kind = kind
+
+        current = child
+
+    current.value = copy.deepcopy(value)
+
+def _materialize_picked(node: _PickNode) -> Any:
+    if node.value is not _MISSING:
+        return node.value
+
+    if node.kind is _SegmentKind.SEQUENCE:
+        return [
+            _materialize_picked(child)
+            for _, child in sorted(node.children.items())
+        ]
+
+    return {
+        segment: _materialize_picked(child)
+        for segment, child in node.children.items()
+    }
 
 def get(
     obj: Any,
@@ -303,27 +345,46 @@ def leaves(
 
 def pick(
     obj: Any,
-    *requested_paths: Path,
-) -> dict[tuple[PathSegment, ...], Any]:
-    """Return selected paths and their values.
+    *selected_paths: Path,
+) -> Any:
+    """Return a structure containing only selected paths.
+
+    Mapping keys are preserved. Object attributes are represented as
+    dictionary keys. Selected sequence items are compacted while
+    preserving their original order.
+
+    The original object is not modified.
 
     Args:
         obj: Object to traverse.
-        requested_paths: Paths whose values should be selected.
+        selected_paths: Paths whose values should be included.
 
     Returns:
-        A mapping from normalized tuple paths to their resolved values.
+        A new structure containing the selected paths.
 
     Raises:
-        PathNotFound: If any requested path cannot be resolved.
+        PathNotFound: If a requested path cannot be resolved.
+        InvalidPath: If a requested path refers to the root object.
     """
-    result: dict[tuple[PathSegment, ...], Any] = {}
+    root = _PickNode()
 
-    for path in requested_paths:
-        normalized = parse_path(path)
-        result[normalized] = get(obj, path)
+    for path in selected_paths:
+        normalized = _normalize_path(obj, path)
 
-    return result
+        if not normalized:
+            raise InvalidPath(
+                "The root path cannot be used with pick"
+            )
+
+        value = get(obj, path)
+
+        _insert_picked(
+            root,
+            normalized,
+            value,
+        )
+
+    return _materialize_picked(root)
 
 def omit(
     obj: Any,

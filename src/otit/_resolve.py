@@ -1,5 +1,6 @@
 import inspect
 from collections.abc import Iterator, Mapping, MutableMapping, MutableSequence, Sequence
+from enum import Enum
 from typing import Any
 
 from ._path import PathSegment
@@ -7,6 +8,11 @@ from ._path import PathSegment
 
 class _ResolutionError(Exception):
     """Internal error raised when a path segment cannot be resolved."""
+
+class _SegmentKind(Enum):
+    MAPPING = "mapping"
+    SEQUENCE = "sequence"
+    ATTRIBUTE = "attribute"
 
 
 def _sequence_index(segment: PathSegment) -> int:
@@ -19,15 +25,21 @@ def _sequence_index(segment: PathSegment) -> int:
 def resolved_segment(
     obj: Any,
     segment: PathSegment,
-) -> PathSegment:
-    """Return the canonical segment for the object being traversed."""
+) -> tuple[PathSegment, _SegmentKind]:
+    """Return the canonical segment and its traversal kind."""
+    if isinstance(obj, Mapping):
+        return segment, _SegmentKind.MAPPING
+
     if (
         isinstance(obj, Sequence)
         and not isinstance(obj, (str, bytes, bytearray))
     ):
-        return _sequence_index(segment)
+        return _sequence_index(segment), _SegmentKind.SEQUENCE
 
-    return segment
+    if not isinstance(segment, str):
+        raise _ResolutionError from None
+
+    return segment, _SegmentKind.ATTRIBUTE
 
 def resolve(obj: Any, segment: PathSegment) -> Any:
     """Resolve one path segment against an object."""
