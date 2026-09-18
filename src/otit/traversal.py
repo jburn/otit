@@ -1,4 +1,5 @@
 import builtins
+import copy
 from collections.abc import Callable, Iterator
 from typing import Any
 
@@ -321,5 +322,32 @@ def pick(
     for path in requested_paths:
         normalized = parse_path(path)
         result[normalized] = get(obj, path)
+
+    return result
+
+def omit(
+    obj: Any,
+    *omitted_paths: Path,
+) -> Any:
+    """Return a copy of an object with selected paths removed.
+
+    The original object is not modified. Each requested path must
+    already exist.
+
+    Args:
+        obj: Object to copy.
+        omitted_paths: Paths to remove from the copied object.
+
+    Returns:
+        A copy of `obj` with the requested paths removed.
+
+    Raises:
+        PathNotFound: If a requested path cannot be resolved.
+        InvalidPath: If a requested path refers to the root object.
+    """
+    result = copy.deepcopy(obj)
+
+    for path in omitted_paths:
+        delete(result, path)
 
     return result
