@@ -1,18 +1,10 @@
 import builtins
-from typing import Any
 from collections.abc import Callable, Iterator
+from typing import Any
 
 from ._path import Path, PathSegment, parse_path
+from ._resolve import _ResolutionError, assign, is_leaf, iter_children, remove, resolve
 from .exceptions import InvalidPath, PathNotFound
-from ._resolve import (
-    _ResolutionError,
-    assign,
-    is_leaf,
-    iter_children,
-    remove,
-    resolve
-)
-
 
 _MISSING = object()
 
