@@ -17,6 +17,9 @@ class _SegmentKind(Enum):
 
 def _sequence_index(segment: PathSegment) -> int:
     """Convert a path segment to a sequence index."""
+    if isinstance(segment, bool):
+        raise _ResolutionError from None
+
     try:
         return int(segment)
     except (TypeError, ValueError):

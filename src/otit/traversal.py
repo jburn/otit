@@ -46,6 +46,83 @@ def _resolve_parent(
 
     return current, segments[-1], len(segments) - 1
 
+_NormalizedPath = tuple[
+    tuple[PathSegment, _SegmentKind],
+    ...
+]
+
+def _is_descendant(
+    path: _NormalizedPath,
+    parent: _NormalizedPath,
+) -> bool:
+    return (
+        len(path) > len(parent)
+        and path[:len(parent)] == parent
+    )
+
+def _remove_redundant_paths(
+    paths: list[_NormalizedPath],
+) -> list[_NormalizedPath]:
+    result: list[_NormalizedPath] = []
+
+    for path in sorted(paths, key=len):
+        if any(
+            path == existing
+            or _is_descendant(path, existing)
+            for existing in result
+        ):
+            continue
+
+        result.append(path)
+
+    return result
+
+def _path_segments(
+    path: _NormalizedPath,
+) -> tuple[PathSegment, ...]:
+    return tuple(
+        segment
+        for segment, _ in path
+    )
+
+def _prepare_omit_paths(
+    obj: Any,
+    paths: tuple[Path, ...],
+) -> list[_NormalizedPath]:
+    normalized: list[_NormalizedPath] = []
+
+    for path in paths:
+        resolved = _normalize_path(obj, path)
+
+        if not resolved:
+            raise InvalidPath(
+                "The root path cannot be used with omit"
+            )
+
+        normalized.append(resolved)
+
+    normalized = _remove_redundant_paths(normalized)
+
+    return sorted(
+        normalized,
+        key=_omit_sort_key,
+        reverse=True,
+    )
+
+def _omit_sort_key(
+    path: _NormalizedPath,
+) -> tuple[int, int]:
+    segment, kind = path[-1]
+
+    sequence_index = (
+        segment
+        if kind is _SegmentKind.SEQUENCE
+        and isinstance(segment, int)
+        else -1
+    )
+
+    return len(path), sequence_index
+
 def _normalize_path(
     obj: Any,
     path: Path,
@@ -87,18 +164,22 @@ def _insert_picked(
     current = root
 
     for segment, kind in path:
+        if current.value is not _MISSING:
+            return
+
+        if current.kind is None:
+            current.kind = kind
+
         child = current.children.get(segment)
 
         if child is None:
             child = _PickNode()
             current.children[segment] = child
 
-        if current.kind is None:
-            current.kind = kind
-
         current = child
 
     current.value = copy.deepcopy(value)
+    current.children.clear()
 
 def _materialize_picked(node: _PickNode) -> Any:
     if node.value is not _MISSING:
@@ -392,8 +473,12 @@ def omit(
 ) -> Any:
     """Return a copy of an object with selected paths removed.
 
-    The original object is not modified. Each requested path must
-    already exist.
+    All paths are resolved against the original object. Removing
+    sequence items therefore does not affect the meaning of later
+    paths.
+
+    If a parent path is omitted, descendant paths are redundant and
+    are ignored.
 
     Args:
         obj: Object to copy.
@@ -406,9 +491,17 @@ def omit(
         PathNotFound: If a requested path cannot be resolved.
         InvalidPath: If a requested path refers to the root object.
     """
+    prepared = _prepare_omit_paths(
+        obj,
+        omitted_paths,
+    )
+
     result = copy.deepcopy(obj)
 
-    for path in omitted_paths:
-        delete(result, path)
+    for path in prepared:
+        delete(
+            result,
+            _path_segments(path),
+        )
 
     return result
