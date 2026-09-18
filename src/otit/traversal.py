@@ -1,6 +1,6 @@
 import builtins
 from typing import Any
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 
 from ._path import Path, PathSegment, parse_path
 from ._resolve import _ResolutionError, assign, iter_children, remove, resolve
@@ -219,3 +219,23 @@ def walk(
         Pairs of `(path, value)` for each reachable child.
     """
     yield from _walk(obj, (), builtins.set())
+
+def find(
+    obj: Any,
+    predicate: Callable[[Any], bool],
+) -> Iterator[tuple[tuple[PathSegment, ...], Any]]:
+    """Yield values matching a predicate and their paths.
+
+    Traverses the object using `walk()` and yields each value for which
+    the predicate returns `True`.
+
+    Args:
+        obj: Object to traverse.
+        predicate: Function called with each reachable value.
+
+    Yields:
+        Pairs of `(path, value)` for matching values.
+    """
+    for path, value in walk(obj):
+        if predicate(value):
+            yield path, value

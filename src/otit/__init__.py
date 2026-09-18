@@ -3,7 +3,7 @@
 __version__ = "0.1.0"
 
 from .exceptions import InvalidPath, OtitError, PathNotFound
-from .traversal import delete, get, has, set, walk
+from .traversal import delete, find, get, has, set, walk
 
 __all__ = [
     "OtitError",
@@ -14,4 +14,5 @@ __all__ = [
     "set",
     "delete",
     "walk",
+    "find"
 ]
