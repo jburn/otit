@@ -9,7 +9,28 @@ class _ResolutionError(Exception):
     """Internal error raised when a path segment cannot be resolved."""
 
 
+def _sequence_index(segment: PathSegment) -> int:
+    """Convert a path segment to a sequence index."""
+    try:
+        return int(segment)
+    except (TypeError, ValueError):
+        raise _ResolutionError from None
+
+def resolved_segment(
+    obj: Any,
+    segment: PathSegment,
+) -> PathSegment:
+    """Return the canonical segment for the object being traversed."""
+    if (
+        isinstance(obj, Sequence)
+        and not isinstance(obj, (str, bytes, bytearray))
+    ):
+        return _sequence_index(segment)
+
+    return segment
+
 def resolve(obj: Any, segment: PathSegment) -> Any:
+    """Resolve one path segment against an object."""
     if isinstance(obj, Mapping):
         try:
             return obj[segment]
@@ -20,10 +41,7 @@ def resolve(obj: Any, segment: PathSegment) -> Any:
         isinstance(obj, Sequence)
         and not isinstance(obj, (str, bytes, bytearray))
     ):
-        try:
-            index = int(segment)
-        except (TypeError, ValueError):
-            raise _ResolutionError from None
+        index = _sequence_index(segment)
 
         try:
             return obj[index]
@@ -48,6 +66,7 @@ def assign(
     *,
     create: bool=False,
 ) -> None:
+    """Assign a value to one path segment."""
     if isinstance(obj, MutableMapping):
         if not create and segment not in obj:
             raise _ResolutionError
@@ -58,10 +77,7 @@ def assign(
         isinstance(obj, MutableSequence)
         and not isinstance(obj, (str, bytes, bytearray))
     ):
-        try:
-            index = int(segment)
-        except (TypeError, ValueError):
-            raise _ResolutionError from None
+        index = _sequence_index(segment)
 
         try:
             obj[index] = value
@@ -83,6 +99,7 @@ def assign(
 
 
 def remove(obj: Any, segment: PathSegment) -> None:
+    """Remove the value at one path segment."""
     if isinstance(obj, MutableMapping):
         try:
             del obj[segment]
@@ -95,10 +112,7 @@ def remove(obj: Any, segment: PathSegment) -> None:
         isinstance(obj, MutableSequence)
         and not isinstance(obj, (str, bytes, bytearray))
     ):
-        try:
-            index = int(segment)
-        except (TypeError, ValueError):
-            raise _ResolutionError from None
+        index = _sequence_index(segment)
 
         try:
             del obj[index]
@@ -117,27 +131,10 @@ def remove(obj: Any, segment: PathSegment) -> None:
 
     delattr(obj, segment)
 
-def is_leaf(obj: Any) -> bool:
-    """Return whether an Object is a terminal traversal value"""
-    if isinstance(obj, Mapping):
-        return False
-
-    if (
-        isinstance(obj, Sequence)
-        and not isinstance(obj, (str, bytes, bytearray))
-    ):
-        return False
-
-    try:
-        vars(obj)
-    except TypeError:
-        return True
-
-    return False
-
 def iter_children(
     obj: Any,
 ) -> Iterator[tuple[PathSegment, Any]]:
+    """Yield directly traversable children of an object."""
     if isinstance(obj, Mapping):
         yield from obj.items()
         return
@@ -155,3 +152,21 @@ def iter_children(
         return
 
     yield from attributes.items()
+
+def _is_leaf(obj: Any) -> bool:
+    """Return whether an Object is a terminal traversal value"""
+    if isinstance(obj, Mapping):
+        return False
+
+    if (
+        isinstance(obj, Sequence)
+        and not isinstance(obj, (str, bytes, bytearray))
+    ):
+        return False
+
+    try:
+        vars(obj)
+    except TypeError:
+        return True
+
+    return False

@@ -3,7 +3,7 @@ from collections.abc import Callable, Iterator
 from typing import Any
 
 from ._path import Path, PathSegment, parse_path
-from ._resolve import _ResolutionError, assign, is_leaf, iter_children, remove, resolve
+from ._resolve import _ResolutionError, assign, _is_leaf, iter_children, remove, resolve, resolved_segment
 from .exceptions import InvalidPath, PathNotFound
 
 _MISSING = object()
@@ -44,6 +44,33 @@ def _resolve_parent(
             ) from None
 
     return current, segments[-1], len(segments) - 1
+
+def _normalize_path(
+    obj: Any,
+    path: Path,
+) -> tuple[PathSegment, ...]:
+    """Return the canonical path produced by resolving a path."""
+    segments = parse_path(path)
+    current = obj
+    normalized: list[PathSegment] = []
+
+    for position, segment in enumerate(segments):
+        try:
+            normalized_segment = resolved_segment(
+                current,
+                segment,
+            )
+            current = resolve(current, segment)
+        except _ResolutionError:
+            raise _path_not_found(
+                path,
+                segment,
+                position,
+            ) from None
+
+        normalized.append(normalized_segment)
+
+    return tuple(normalized)
 
 def get(
     obj: Any,
@@ -184,12 +211,10 @@ def _walk(
     if obj_id in ancestors:
         return
 
-    children = iter_children(obj)
-
     ancestors.add(obj_id)
 
     try:
-        for segment, value in children:
+        for segment, value in iter_children(obj):
             child_path = path + (segment,)
 
             yield child_path, value
@@ -272,7 +297,7 @@ def leaves(
         Pairs of `(path, value)` for each leaf value.
     """
     for path, value in walk(obj):
-        if is_leaf(value):
+        if _is_leaf(value):
             yield path, value
 
 def pick(
