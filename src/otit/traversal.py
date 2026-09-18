@@ -1,7 +1,9 @@
+import builtins
 from typing import Any
+from collections.abc import Iterator
 
 from ._path import Path, PathSegment, parse_path
-from ._resolve import _ResolutionError, assign, remove, resolve
+from ._resolve import _ResolutionError, assign, iter_children, remove, resolve
 from .exceptions import InvalidPath, PathNotFound
 
 _MISSING = object()
@@ -108,3 +110,35 @@ def delete(obj: Any, path: Path) -> None:
             segment,
             position,
         ) from None
+
+def _walk(
+    obj: Any,
+    path: tuple[PathSegment, ...],
+    ancestors: builtins.set[int],
+) -> Iterator[tuple[tuple[PathSegment, ...], Any]]:
+    obj_id = id(obj)
+
+    if obj_id in ancestors:
+        return
+
+    children = iter_children(obj)
+
+    ancestors.add(obj_id)
+
+    try:
+        for segment, value in children:
+            child_path = path + (segment,)
+
+            yield child_path, value
+            yield from _walk(
+                value,
+                child_path,
+                ancestors,
+            )
+    finally:
+        ancestors.remove(obj_id)
+
+def walk(
+    obj: Any,
+) -> Iterator[tuple[tuple[PathSegment, ...], Any]]:
+    yield from _walk(obj, (), builtins.set())

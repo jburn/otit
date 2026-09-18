@@ -1,5 +1,5 @@
 import inspect
-from collections.abc import Mapping, MutableMapping, MutableSequence, Sequence
+from collections.abc import Iterator, Mapping, MutableMapping, MutableSequence, Sequence
 from typing import Any
 
 from ._path import PathSegment
@@ -116,3 +116,24 @@ def remove(obj: Any, segment: PathSegment) -> None:
         raise _ResolutionError from None
 
     delattr(obj, segment)
+
+def iter_children(
+    obj: Any,
+) -> Iterator[tuple[PathSegment, Any]]:
+    if isinstance(obj, Mapping):
+        yield from obj.items()
+        return
+
+    if (
+        isinstance(obj, Sequence)
+        and not isinstance(obj, (str, bytes, bytearray))
+    ):
+        yield from enumerate(obj)
+        return
+
+    try:
+        attributes = vars(obj)
+    except TypeError:
+        return
+
+    yield from attributes.items()
