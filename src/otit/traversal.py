@@ -23,6 +23,7 @@ def _resolve_parent(
     obj: Any,
     path: Path,
 ) -> tuple[Any, PathSegment, int]:
+    """Resolve the parent object and final segment of a path."""
     segments = parse_path(path)
 
     if not segments:
@@ -50,6 +51,21 @@ def get(
     *,
     default: Any = _MISSING,
 ) -> Any:
+    """Return the value at a path.
+
+    Args:
+        obj: Object to traverse.
+        path: Dot-separated string or sequence of path segments.
+        default: Value returned when the path cannot be resolved.
+
+    Returns:
+        The resolved value, or `default` if provided and the path
+        cannot be resolved.
+
+    Raises:
+        PathNotFound: If the path cannot be resolved and no default
+            was provided.
+    """
     segments = parse_path(path)
     current = obj
 
@@ -70,6 +86,19 @@ def get(
 
 
 def has(obj: Any, path: Path) -> bool:
+    """Return whether a path can be resolved.
+
+    Args:
+        obj: Object to traverse.
+        path: Dot-separated string or sequence of path segments.
+
+    Returns:
+        `True` if the path can be resolved, otherwise `False`.
+
+    Notes:
+        The empty path refers to the root object and therefore always
+        resolves successfully.
+    """
     try:
         get(obj, path)
     except PathNotFound:
@@ -83,6 +112,25 @@ def set(
     value: Any,
     create: bool = False
     ) -> None:
+    """Set the value at a path.
+
+    The parent path must already exist. By default, the final target
+    must also exist. Set `create=True` to allow creation of a final
+    mapping key or object attribute.
+
+    `create=True` does not create missing parent containers or extend
+    sequences.
+
+    Args:
+        obj: Object to modify.
+        path: Path to the target value.
+        value: Value to assign.
+        create: Whether a missing final key or attribute may be created.
+
+    Raises:
+        PathNotFound: If the path cannot be resolved.
+        InvalidPath: If the path refers to the root object.
+    """
     parent, segment, position = _resolve_parent(obj, path)
 
     try:
@@ -100,6 +148,21 @@ def set(
         ) from None
 
 def delete(obj: Any, path: Path) -> None:
+    """Delete the value at a path.
+
+    The complete path must already exist. For mappings, the target key
+    is removed. For mutable sequences, the target item is removed and
+    subsequent items shift position. For objects, the target attribute
+    is deleted.
+
+    Args:
+        obj: Object to modify.
+        path: Path to the value to delete.
+
+    Raises:
+        PathNotFound: If the path cannot be resolved.
+        InvalidPath: If the path refers to the root object.
+    """
     parent, segment, position = _resolve_parent(obj, path)
 
     try:
@@ -141,4 +204,18 @@ def _walk(
 def walk(
     obj: Any,
 ) -> Iterator[tuple[tuple[PathSegment, ...], Any]]:
+    """Yield every reachable child and its path.
+
+    Paths are returned as tuples of string and integer segments.
+    The root object itself is not yielded.
+
+    Cycles are not traversed recursively, but shared objects reachable
+    through different paths are visited independently.
+
+    Args:
+        obj: Object to traverse.
+
+    Yields:
+        Pairs of `(path, value)` for each reachable child.
+    """
     yield from _walk(obj, (), builtins.set())
