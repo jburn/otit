@@ -1,0 +1,60 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "otit"
+version = "0.1.0"
+description = "Object Traversal & Inspection Toolkit"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "jburn" }
+]
+keywords = [
+    "object",
+    "traversal",
+    "inspection",
+    "nested",
+    "utilities",
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Repository = "https://github.com/jburn/otit"
+Issues = "https://github.com/jburn/otit/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/otit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+packages = ["otit"]
+mypy_path = "src"
+
+[dependency-groups]
+dev = [
+    "build",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+]
