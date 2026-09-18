@@ -4,7 +4,16 @@ from collections.abc import Callable, Iterator
 from typing import Any
 
 from ._path import Path, PathSegment, parse_path
-from ._resolve import _ResolutionError, _SegmentKind, assign, _is_leaf, iter_children, remove, resolve, resolved_segment
+from ._resolve import (
+    _is_leaf,
+    _ResolutionError,
+    _SegmentKind,
+    assign,
+    iter_children,
+    remove,
+    resolve,
+    resolved_segment,
+)
 from .exceptions import InvalidPath, PathNotFound
 
 _MISSING = object()
