@@ -1,6 +1,9 @@
 class OtitError(Exception):
     """Base exception for OTIT."""
 
+class InvalidPath(OtitError):
+    """Raised when a path is invalid for the requested operation."""
+
 class PathNotFound(OtitError):
     """Raised when a path cannot be resolved."""
 

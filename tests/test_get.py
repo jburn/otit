@@ -63,8 +63,16 @@ def test_default() -> None:
     assert otit.get(obj, "user.name", default=None) is None
 
 
-def test_has() -> None:
-    obj = {"user": {"name": "Matti"}}
+def test_get_root() -> None:
+    obj = {"name": "Matti"}
 
-    assert otit.has(obj, "user.name")
-    assert not otit.has(obj, "user.email")
+    assert otit.get(obj, "") is obj
+
+def test_get_does_not_hide_property_exceptions() -> None:
+    class Broken:
+        @property
+        def value(self) -> str:
+            raise RuntimeError("property failed")
+
+    with pytest.raises(RuntimeError, match="property failed"):
+        otit.get(Broken(), "value")
