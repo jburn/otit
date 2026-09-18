@@ -274,3 +274,27 @@ def leaves(
     for path, value in walk(obj):
         if is_leaf(value):
             yield path, value
+
+def pick(
+    obj: Any,
+    *requested_paths: Path,
+) -> dict[tuple[PathSegment, ...], Any]:
+    """Return selected paths and their values.
+
+    Args:
+        obj: Object to traverse.
+        requested_paths: Paths whose values should be selected.
+
+    Returns:
+        A mapping from normalized tuple paths to their resolved values.
+
+    Raises:
+        PathNotFound: If any requested path cannot be resolved.
+    """
+    result: dict[tuple[PathSegment, ...], Any] = {}
+
+    for path in requested_paths:
+        normalized = parse_path(path)
+        result[normalized] = get(obj, path)
+
+    return result
