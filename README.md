@@ -16,6 +16,16 @@ It provides a consistent path-based API for working with mappings, sequences, ob
 * Payload shaping - use pick() and omit() to derive structures without modifying the original.
 * Generic application utilities - work with nested structures when the exact mixture of dictionaries, lists, and objects isn't known in advance.
 
+OTIT deliberately keeps path traversal small and predictable. It is not intended to be:
+
+* A query language - paths address concrete values; OTIT does not implement wildcards, filters, recursive selectors, or expression syntax.
+* A serialization or schema library - OTIT does not validate schemas, coerce types, or serialize arbitrary objects.
+* A web scraper or HTML parser - OTIT can inspect structures produced by scrapers and parsers, but does not fetch or parse web pages itself.
+* An object-mapping framework - structural operations such as pick() focus on data shape rather than reconstructing arbitrary Python class instances.
+* A full reflection framework - OTIT focuses on practical traversal of mappings, sequences, and ordinary object attributes.
+
+The goal is straightforward path-based traversal and inspection without turning paths into a separate query language.
+
 ## Installation
 
 ```bash
