@@ -6,6 +6,16 @@ OTIT is a small, typed, dependency-free Python library for navigating, inspectin
 
 It provides a consistent path-based API for working with mappings, sequences, object attributes, and structures containing a mixture of all three.
 
+## Use cases
+
+* API payload inspection - safely access deeply nested values without chains of dict/list indexing.
+* Web scraping and extraction pipelines - inspect and extract values from nested structures produced by scrapers, parsers, or API responses.
+* Configuration processing - inspect, test, modify, pick, or omit nested configuration values.
+* Testing and assertions - query arbitrary nested structures with consistent path semantics.
+* Data inspection/tooling - walk heterogeneous combinations of mappings, sequences, and Python objects.
+* Payload shaping - use pick() and omit() to derive structures without modifying the original.
+* Generic application utilities - work with nested structures when the exact mixture of dictionaries, lists, and objects isn't known in advance.
+
 ## Installation
 
 ```bash
